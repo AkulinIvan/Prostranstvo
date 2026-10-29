@@ -19,12 +19,18 @@ class Organizer(models.Model):
         return self.name
 
 class Event(models.Model):
+    TYPE_CHOICES = (
+        ('open', 'Открытая запись'),
+        ('request', 'Запрос на расчет'),
+    )
+    
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='events')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     date = models.DateTimeField()
     location = models.CharField(max_length=200, blank=True)
     direction = models.CharField(max_length=100)
+    event_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='open', verbose_name="Тип события")
     is_active = models.BooleanField(default=True)
     min_people = models.IntegerField(default=3)
     is_confirmed = models.BooleanField(default=False)
@@ -51,10 +57,11 @@ class Lead(models.Model):
     contact = models.CharField(max_length=100) # Email или телефон
     direction = models.CharField(max_length=100)
     
-    # НОВЫЕ ПОЛЯ
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True) # Для ссылки-приглашения
-    
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    guests_count = models.IntegerField(null=True, blank=True, verbose_name="Количество гостей")
+    budget = models.CharField(max_length=100, blank=True, verbose_name="Бюджет")
+    wishes = models.TextField(blank=True, verbose_name="Пожелания")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

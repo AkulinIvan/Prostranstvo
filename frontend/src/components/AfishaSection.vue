@@ -30,9 +30,19 @@
 
         <!-- Кнопка (справа) -->
         <div class="event-action">
-          <button class="btn-event" @click="$emit('select-event', event)">
-            Записаться
-            <span class="arrow">→</span>
+          <button 
+            v-if="event.event_type === 'open'" 
+            class="btn-event" 
+            @click="$emit('select-event', event)"
+          >
+            Записаться <span class="arrow">→</span>
+          </button>
+          <button 
+            v-else 
+            class="btn-event btn-request" 
+            @click="$emit('request-event', event)"
+          >
+            Узнать стоимость <span class="arrow">→</span>
           </button>
         </div>
 
@@ -55,7 +65,7 @@ defineProps({
   }
 });
 
-defineEmits(['select-event']);
+defineEmits(['select-event', 'request-event']);
 
 // Функции для красивого форматирования даты
 const getDay = (isoString) => new Date(isoString).toLocaleDateString('ru-RU', { day: 'numeric' });

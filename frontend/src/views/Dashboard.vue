@@ -55,14 +55,20 @@
         <div v-if="events.length" class="events-list">
           <div v-for="event in events" :key="event.id" class="event-card">
             <div class="event-header">
-              <h3>{{ event.title }}</h3>
+              <h3>
+                <span v-if="event.event_type === 'open'">📝</span>
+                <span v-else>💼</span>
+                {{ event.title }}</h3>
               <span class="event-date">{{ formatDate(event.date) }}</span>
             </div>
             
             <div class="event-stats">
-              <div class="stat-item">
+              <div v-if="event.event_type === 'open'" class="stat-item">
                 <span>Записались:</span>
                 <strong>{{ event.lead_count }}</strong> / {{ event.min_people }}
+              </div>
+              <div v-else class="stat-item">
+                <span>Тип:</span> <strong>Запрос на расчет</strong>
               </div>
               <div :class="['status-badge', event.is_confirmed ? 'status-ok' : 'status-wait']">
                 {{ event.is_confirmed ? '✅ Группа набрана' : '⏳ Идет набор' }}
@@ -110,6 +116,14 @@
           <input v-model="form.date" type="datetime-local" />
         </div>
         
+        <div class="input-group">
+          <label>Тип события</label>
+          <select v-model="form.event_type">
+            <option value="open">Открытая запись (клиенты записываются сами)</option>
+            <option value="request">Запрос на расчет (клиент оставляет заявку, вы звоните)</option>
+          </select>
+        </div>
+
         <!-- Список направлений БЕРЕТСЯ ИЗ ПРОФИЛЯ -->
         <div class="input-group">
           <label>Направление</label>
@@ -257,7 +271,8 @@ const error = ref('')
 const organizerName = ref('')
 
 const form = reactive({ 
-  title: '', date: '', direction: '', location: '', min_people: 3, description: '' 
+  title: '', date: '', direction: '', location: '', min_people: 3, description: '',
+  event_type: 'open'
 })
 
 const profileForm = reactive({ 
@@ -390,7 +405,7 @@ const getFullImageUrl = (url) => {
 
 const openCreateModal = () => {
   // Очищаем форму при открытии
-  Object.assign(form, { title: '', date: '', direction: '', location: '', min_people: 3, description: '' })
+  Object.assign(form, { title: '', date: '', direction: '', location: '', min_people: 3, description: '', event_type: 'open' })
   showCreate.value = true
 }
 
