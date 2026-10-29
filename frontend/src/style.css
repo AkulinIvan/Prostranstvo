@@ -1,0 +1,54 @@
+/* src/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --color-bg: #F4F1EA; /* Пергамент */
+  --color-text: #2F3E36; /* Глубокий хвойный */
+  --color-text-light: #5B6A60;
+  --color-accent: #C27A62; /* Терракота */
+  --color-accent-hover: #A6624D;
+  --color-gold: #C5A880;
+  --color-white: #FFFFFF;
+  
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  /* Легкий градиент: от теплого песка к легкому хвойному оттенку */
+  background-image: radial-gradient(circle at top right, rgba(194, 122, 98, 0.05), transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(47, 62, 54, 0.03), transparent 40%);
+  color: var(--color-text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Уважаем настройки пользователя (a11y) */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Скрыть визуально, но оставить для скринридеров */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
