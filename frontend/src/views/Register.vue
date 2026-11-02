@@ -12,9 +12,9 @@
         </div>
 
         <div class="input-group">
-          <label>Ссылка (латиницей, без пробелов)</label>
-          <input v-model="form.slug" type="text" placeholder="jenyaz" required />
-          <span class="hint">Ваш сайт будет доступен по адресу: /{{ form.slug || 'slug' }}</span>
+          <label>Ссылка (можно кириллицей)</label>
+          <input v-model="form.slug" type="text" placeholder="ivanovivan" required />
+          <span class="hint">Ваш сайт будет доступен по адресу: /{{ form.slug || 'ссылка' }}</span>
         </div>
 
         <div class="input-group">
@@ -60,14 +60,21 @@ const register = async () => {
   loading.value = true
   error.value = ''
   try {
-    // Отправляем данные на бэкенд
     const { data } = await api.post('/register/', form)
     
-    // Если регистрация успешна, перенаправляем на страницу ожидания
-    router.push({ 
-      path: '/check-email', 
-      query: { email: form.email, uid: data.uid } // uid можно вернуть с бэкенда
-    })
+    if (data.requires_verification) {
+      // Требуется подтверждение — ведем на страницу ожидания
+      router.push({ 
+        path: '/check-email', 
+        query: { email: form.email } 
+      })
+    } else {
+      // Подтверждение не нужно — сразу ведем на вход
+      router.push({ 
+        path: '/login', 
+        query: { registered: 'true' } 
+      })
+    }
   } catch (e) {
     error.value = e.response?.data?.error || 'Ошибка регистрации'
   } finally {

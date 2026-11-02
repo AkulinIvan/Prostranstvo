@@ -9,12 +9,17 @@ import uuid
 class Organizer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, allow_unicode=True, verbose_name="Ссылка (можно кириллицей)")
     bio = models.TextField(blank=True)
     directions_data = models.JSONField(default=list, blank=True)
     yandex_email = models.EmailField(blank=True)
     yandex_app_password = models.CharField(max_length=200, blank=True)
     yandex_calendar_name = models.CharField(max_length=100, default="Мой календарь")
+    smtp_host = models.CharField(max_length=100, blank=True, verbose_name="SMTP Хост (напр. smtp.yandex.ru)")
+    smtp_port = models.IntegerField(default=465, verbose_name="SMTP Порт")
+    smtp_user = models.EmailField(blank=True, verbose_name="Email для отправки")
+    smtp_password = models.CharField(max_length=200, blank=True, verbose_name="Пароль приложения")
+    smtp_use_ssl = models.BooleanField(default=True, verbose_name="Использовать SSL")
     
     guarantee_text = models.TextField(blank=True, default="Мы не спамим. Ваши данные защищены.")
     privacy_policy_url = models.URLField(blank=True)
@@ -129,3 +134,23 @@ def add_contact_to_base(sender, instance, created, **kwargs):
             contact=instance.contact,
             defaults={'name': instance.name, 'organizer': instance.event.organizer}
         )
+        
+        
+class SiteSettings(models.Model):
+    """Глобальные настройки платформы"""
+    require_email_verification = models.BooleanField(
+        default=True, 
+        verbose_name="Требовать подтверждение почты при регистрации"
+    )
+
+    class Meta:
+        verbose_name = "Настройки сайта"
+        verbose_name_plural = "Настройки сайта"
+
+    def __str__(self):
+        return "Настройки платформы"
+
+    def save(self, *args, **kwargs):
+        # Гарантируем, что в базе всегда только одна запись настроек
+        self.pk = 1
+        super().save(*args, **kwargs)

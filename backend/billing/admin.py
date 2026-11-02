@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Plan, Subscription
+from django.utils.safestring import mark_safe
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
@@ -40,19 +41,12 @@ class SubscriptionAdmin(admin.ModelAdmin):
     )
 
     def status_badge(self, obj):
-        """Красивая плашка статуса в админке"""
         if obj.is_valid:
-            return format_html(
-                '<span style="background-color: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 10px; font-weight: bold;">✅ Активна</span>'
-            )
+            return mark_safe('<span style="background-color: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 10px; font-weight: bold;">✅ Активна</span>')
         elif obj.plan and obj.plan.price == 0:
-            return format_html(
-                '<span style="background-color: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px;">Бесплатный</span>'
-            )
+            return mark_safe('<span style="background-color: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px;">Бесплатный</span>')
         else:
-            return format_html(
-                '<span style="background-color: #ffebee; color: #c62828; padding: 3px 8px; border-radius: 10px;">❌ Не активна</span>'
-            )
+            return mark_safe('<span style="background-color: #ffebee; color: #c62828; padding: 3px 8px; border-radius: 10px;">❌ Не активна</span>')
     
     status_badge.short_description = "Статус"
 

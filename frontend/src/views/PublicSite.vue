@@ -129,7 +129,7 @@ import SkeletonLoader from '@/components/SkeletonLoader.vue'
 import ReviewsSection from '@/components/ReviewsSection.vue'
 
 const route = useRoute()
-const slug = route.params.slug
+const slug = decodeURIComponent(route.params.slug)
 const events = ref([])
 const organizer = ref({})
 const loading = ref(true)

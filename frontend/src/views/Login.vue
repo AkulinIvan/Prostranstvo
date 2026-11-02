@@ -3,6 +3,9 @@
   <div class="login-page">
     <div class="login-box">
       <h2>Вход для организатора</h2>
+      <div v-if="registered" class="success-banner">
+        Аккаунт успешно создан! Войдите в систему.
+      </div>
       <form @submit.prevent="login">
         <input v-model="username" placeholder="Логин" required />
         <input v-model="password" type="password" placeholder="Пароль" required />
@@ -14,14 +17,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/api'
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
 const router = useRouter()
+const route = useRoute()
+const registered = computed(() => route.query.registered === 'true')
 
 const login = async () => {
   try {
@@ -41,4 +46,12 @@ const login = async () => {
 .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--color-gold); }
 .btn-primary { width: 100%; background: var(--color-text); color: white; padding: 12px; border: none; cursor: pointer; }
 .error { color: var(--color-accent); margin-top: 10px; text-align: center; }
+.success-banner {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
 </style>

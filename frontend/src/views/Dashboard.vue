@@ -228,7 +228,32 @@
           <label>Пароль приложения Яндекса</label>
           <input v-model="profileForm.yandex_app_password" type="password" />
         </div>    
+        <!-- === БЛОК SMTP === -->
+        <h3 class="smtp-title">Настройки почты для рассылок</h3>
+        <p class="smtp-hint">Письма клиентам будут приходить от вашего имени, а не от платформы.</p>
 
+        <div class="input-group">
+          <label>Email для отправки (SMTP)</label>
+          <input v-model="profileForm.smtp_user" type="email" placeholder="example@yandex.ru" />
+        </div>
+        <div class="input-group">
+          <label>Пароль приложения</label>
+          <input v-model="profileForm.smtp_password" type="password" placeholder="Пароль приложения из Яндекса" />
+        </div>
+        <div class="input-group">
+          <label>SMTP Хост</label>
+          <input v-model="profileForm.smtp_host" type="text" placeholder="smtp.yandex.ru" />
+        </div>
+        <div class="input-group">
+          <label>SMTP Порт</label>
+          <input v-model.number="profileForm.smtp_port" type="number" placeholder="465" />
+        </div>
+        <div class="input-group">
+          <label>
+            <input v-model="profileForm.smtp_use_ssl" type="checkbox" />
+            Использовать SSL
+          </label>
+        </div>
         <div class="modal-actions">
           <button @click="showProfile = false" class="btn-cancel">Отмена</button>
           <button @click="saveProfile" class="btn-primary">Сохранить</button>
@@ -318,7 +343,14 @@ const form = reactive({
 })
 
 const profileForm = reactive({ 
-  name: '', bio: '', yandex_email: '', yandex_app_password: '', directions_data: [] 
+  name: '', bio: '', 
+  yandex_email: '', yandex_app_password: '',
+  directions_data: [],
+  smtp_host: 'smtp.yandex.ru',
+  smtp_port: 465,
+  smtp_user: '',
+  smtp_password: '',
+  smtp_use_ssl: true,
 })
 
 const isSaving = ref(false)
@@ -953,4 +985,20 @@ onMounted(() => {
 .review-admin-actions { display: flex; gap: 15px; align-items: center; }
 .btn-approve { background: #e8f5e9; border: 1px solid #2e7d32; color: #2e7d32; padding: 5px 10px; cursor: pointer; }
 .status-approved { color: #2e7d32; font-size: 0.85rem; }
+
+.smtp-title {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  color: var(--color-text);
+  margin-top: 30px;
+  margin-bottom: 5px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+.smtp-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin-bottom: 20px;
+  font-style: italic;
+}
 </style>

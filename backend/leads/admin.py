@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Lead, Event, Organizer
+from .models import Lead, Event, Organizer, SiteSettings
 
 @admin.register(Organizer)
 class OrganizerAdmin(admin.ModelAdmin):
@@ -18,3 +18,16 @@ class LeadAdmin(admin.ModelAdmin):
     list_filter = ('direction', 'created_at')
     search_fields = ('name', 'contact', 'event__title')
     readonly_fields = ('created_at',)
+    
+    
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ('require_email_verification',)
+    
+    def has_add_permission(self, request):
+        # Запрещаем создавать больше одной записи
+        return not SiteSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # Запрещаем удалять единственную запись настроек
+        return False
