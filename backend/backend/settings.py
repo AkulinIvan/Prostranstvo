@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'leads',
+    'billing',
 ]
 
 MIDDLEWARE = [
@@ -163,3 +164,10 @@ YANDEX_CALDAV_EMAIL = os.getenv('YANDEX_CALDAV_EMAIL', 'akuliniwan@yandex.ru')
 YANDEX_CALDAV_KEY = os.getenv('YANDEX_CALDAV_KEY', '')
 YANDEX_CALENDAR_NAME = os.getenv('YANDEX_CALENDAR_NAME', 'Мой календарь')
 ORGANIZER_TOKEN = os.getenv('ORGANIZER_TOKEN', '')
+
+# ЮKassa
+YOOKASSA_SHOP_ID = os.getenv('YOOKASSA_SHOP_ID', '')
+YOOKASSA_SECRET_KEY = os.getenv('YOOKASSA_SECRET_KEY', '')
+
+# URL фронтенда (для возврата после оплаты и ссылок в письмах)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')

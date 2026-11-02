@@ -7,6 +7,16 @@ logger = logging.getLogger(__name__)
 
 def sync_event_to_yandex(event, action='create'):
     org = event.organizer
+    
+    if not org.is_free_forever:
+        try:
+            sub = org.user.subscription
+            if not sub.is_valid or not sub.plan.has_calendar_sync:
+                print(f"⚠️ Синхронизация с календарем недоступна на тарифе {sub.plan.name if sub.plan else 'Нет'}")
+                return
+        except Exception:
+            return
+        
     if not org.yandex_email or not org.yandex_app_password:
         print("⚠️ Календарь не настроен для организатора", org.name)
         return

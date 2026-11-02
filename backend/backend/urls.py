@@ -49,6 +49,7 @@ urlpatterns = [
     path('api/invite-contact/', invite_contact_to_event, name='invite_contact_to_event'),
     path('api/verify-email/', verify_email, name='verify_email'),
     path('api/resend-verification/', resend_verification, name='resend_verification'),
+    path('api/billing/', include('billing.urls')),
     
     # Авторизация
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

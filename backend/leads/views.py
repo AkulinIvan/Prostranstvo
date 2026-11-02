@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.core.files.storage import default_storage
@@ -15,6 +16,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.db import transaction
 import re
 
+from billing.models import Plan, Subscription
+
 from .models import Contact, Event, Lead, Organizer, Review
 from .serializers import EventSerializer, LeadSerializer, ReviewSerializer
 
@@ -22,6 +25,26 @@ class IsOrganizer(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and hasattr(request.user, 'organizer')
 
+    def can_create_event(user):
+        """Проверяет, может ли пользователь создать еще одно событие"""
+        # 1. Если у пользователя стоит флаг "бесплатно навсегда" (Женя)
+        if getattr(user.organizer, 'is_free_forever', False):
+            return True
+            
+        # 2. Проверяем подписку
+        try:
+            sub = user.subscription
+            if not sub.is_valid:
+                return False
+            if sub.plan.max_events == 0: # Безлимит
+                return True
+            
+            # Считаем текущее количество активных событий
+            current_count = user.organizer.events.filter(is_active=True).count()
+            return current_count < sub.plan.max_events
+        except Subscription.DoesNotExist:
+            return False
+    
 class PublicEventViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = EventSerializer
     permission_classes = [permissions.AllowAny]
@@ -44,6 +67,8 @@ class DashboardEventViewSet(viewsets.ModelViewSet):
         return Event.objects.filter(organizer=self.request.user.organizer).order_by('date')
 
     def perform_create(self, serializer):
+        if not IsOrganizer.can_create_event(self.request.user):
+            raise PermissionDenied('Лимит событий исчерпан. Оформите подписку Профи.')
         serializer.save(organizer=self.request.user.organizer)
 
     @action(detail=True, methods=['post'])
@@ -174,6 +199,9 @@ def register_organizer(request):
                     {"id": "1", "title": "Мероприятия", "description": "Описание ваших мероприятий...", "icon": "01"}
                 ]
             )
+            free_plan = Plan.objects.filter(slug='free').first()
+            if free_plan:
+                Subscription.objects.create(user=user, plan=free_plan, is_active=True)
             
             # Генерируем токен и UID
             token = default_token_generator.make_token(user)
@@ -465,3 +493,7 @@ class DashboardReviewViewSet(viewsets.ModelViewSet):
         review.is_approved = True
         review.save()
         return Response({'status': 'ok'})
+    
+
+
+

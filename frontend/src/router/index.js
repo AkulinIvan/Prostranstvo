@@ -7,6 +7,7 @@ import Dashboard from '../views/Dashboard.vue'
 import InviteResponse from '../views/InviteResponse.vue'
 import VerifyEmail from '../views/VerifyEmail.vue'
 import CheckEmail from '../views/CheckEmail.vue'
+import Pricing from '../views/Pricing.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,7 +22,8 @@ const router = createRouter({
     { path: '/invite/:token', component: InviteResponse },
     { path: '/verify-email/:uid/:token', component: VerifyEmail },
     { path: '/check-email', component: CheckEmail },
-    
+    { path: '/pricing', component: Pricing },
+
     // 3. Динамический маршрут (сайт конкретной Жени)
     { path: '/:slug', component: PublicSite },
   ]

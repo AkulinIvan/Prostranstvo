@@ -23,6 +23,7 @@ class Organizer(models.Model):
     # Автосохранение
     last_saved_at = models.DateTimeField(auto_now=True)
 
+    is_free_forever = models.BooleanField(default=False, verbose_name="Бесплатный доступ навсегда")
     def __str__(self):
         return self.name
 
