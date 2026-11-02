@@ -15,8 +15,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.db import transaction
 import re
 
-from .models import Contact, Event, Lead, Organizer
-from .serializers import EventSerializer, LeadSerializer
+from .models import Contact, Event, Lead, Organizer, Review
+from .serializers import EventSerializer, LeadSerializer, ReviewSerializer
 
 class IsOrganizer(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -29,6 +29,12 @@ class PublicEventViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         slug = self.kwargs.get('slug')
         return Event.objects.filter(organizer__slug=slug, is_active=True).order_by('date')
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        Event.objects.filter(pk=instance.pk).update(view_count=F('view_count') + 1)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 class DashboardEventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
@@ -120,13 +126,13 @@ class PublicLeadCreateViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def public_organizer_info(request, slug):
-    """Отдает публичную информацию об организаторе для сайта"""
     organizer = get_object_or_404(Organizer, slug=slug)
     data = {
-        'name': organizer.name,
-        'slug': organizer.slug,
-        'bio': organizer.bio,
+        'name': organizer.name, 'slug': organizer.slug, 'bio': organizer.bio,
         'directions_data': organizer.directions_data,
+        'guarantee_text': organizer.guarantee_text,
+        'privacy_policy_url': organizer.privacy_policy_url,
+        'offer_url': organizer.offer_url,
     }
     return Response(data)
 
@@ -140,7 +146,7 @@ def register_organizer(request):
     name = data.get('name', '').strip()
     slug = data.get('slug', '').strip().lower()
     bio = data.get('bio', '').strip()
-    email = data.get('email', '').strip() # <--- ДОБАВЛЯЕМ ПОЛЕ EMAIL
+    email = data.get('email', '').strip()
 
     # Валидация
     if not username or not password or not name or not slug or not email:
@@ -231,17 +237,17 @@ class DashboardProfileViewSet(viewsets.ModelViewSet):
     def list(self, request):
         org = request.user.organizer
         return Response({
-            'name': org.name,
-            'bio': org.bio,
-            'slug': org.slug,
+            'name': org.name, 'bio': org.bio, 'slug': org.slug,
             'directions_data': org.directions_data,
             'yandex_email': org.yandex_email,
             'yandex_app_password': org.yandex_app_password,
-            'yandex_calendar_name': org.yandex_calendar_name
+            'yandex_calendar_name': org.yandex_calendar_name,
+            'guarantee_text': org.guarantee_text,
+            'privacy_policy_url': org.privacy_policy_url,
+            'offer_url': org.offer_url,
         })
         
     def create(self, request):
-        # Обновление профиля
         org = request.user.organizer
         data = request.data
         org.name = data.get('name', org.name)
@@ -249,6 +255,9 @@ class DashboardProfileViewSet(viewsets.ModelViewSet):
         org.directions_data = data.get('directions_data', org.directions_data)
         org.yandex_email = data.get('yandex_email', org.yandex_email)
         org.yandex_app_password = data.get('yandex_app_password', org.yandex_app_password)
+        org.guarantee_text = data.get('guarantee_text', org.guarantee_text)
+        org.privacy_policy_url = data.get('privacy_policy_url', org.privacy_policy_url)
+        org.offer_url = data.get('offer_url', org.offer_url)
         org.save()
         return Response({'status': 'ok'})
     
@@ -409,3 +418,50 @@ def resend_verification(request):
         fail_silently=False,
     )
     return Response({'status': 'ok', 'message': 'Письмо отправлено повторно'})
+
+
+class PublicReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.AllowAny]
+    http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        slug = self.kwargs.get('slug')
+        # Показываем только одобренные отзывы для этого организатора
+        return Review.objects.filter(organizer__slug=slug, is_approved=True).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        slug = self.kwargs.get('slug')
+        organizer = get_object_or_404(Organizer, slug=slug)
+        # При создании отзыв по умолчанию не одобрен (is_approved=False)
+        serializer.save(organizer=organizer)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def join_waitlist(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    if not event.is_full:
+        return Response({'error': 'Есть свободные места'}, status=400)
+    
+    lead = Lead.objects.create(
+        event=event,
+        name=request.data.get('name'),
+        contact=request.data.get('contact'),
+        direction=event.direction,
+        is_waitlist=True
+    )
+    return Response({'status': 'ok', 'message': 'Вы в листе ожидания!'})
+        
+class DashboardReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsOrganizer]
+
+    def get_queryset(self):
+        return Review.objects.filter(organizer=self.request.user.organizer).order_by('-created_at')
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        review = self.get_object()
+        review.is_approved = True
+        review.save()
+        return Response({'status': 'ok'})

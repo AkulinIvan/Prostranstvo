@@ -157,20 +157,6 @@ MAILERS = {
 }
 DEFAULT_FROM_EMAIL = os.getenv('EMAIL_HOST_USER', 'test@yandex.ru')
 
-# MAILERS = {
-#     "default": {
-#         "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
-#         "OPTIONS": {
-#             "host": "smtp.yandex.ru",          
-#             "port": 465,
-#             "username": "akuliniwan@yandex.ru",
-#             "password": "gogfeheowztkkthj",
-#             "use_ssl": True,
-#         },
-#     },
-# }
-
-# DEFAULT_FROM_EMAIL = "akuliniwan@yandex.ru"
 LEAD_EMAIL = os.getenv('LEAD_EMAIL', 'akuliniwan@yandex.ru')
 YANDEX_CALDAV_URL = os.getenv('YANDEX_CALDAV_URL', 'https://caldav.yandex.ru/')
 YANDEX_CALDAV_EMAIL = os.getenv('YANDEX_CALDAV_EMAIL', 'akuliniwan@yandex.ru')

@@ -9,10 +9,12 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView
 from leads.views import (
     DashboardProfileViewSet,
+    DashboardReviewViewSet,
     PublicEventViewSet, 
     DashboardEventViewSet, 
     DashboardLeadViewSet, 
     PublicLeadCreateViewSet,
+    PublicReviewViewSet,
     get_all_contacts,
     get_invite_info,
     invite_contact_to_event,
@@ -30,6 +32,8 @@ router.register(r'dashboard/events', DashboardEventViewSet, basename='dashboard-
 router.register(r'dashboard/leads', DashboardLeadViewSet, basename='dashboard-leads')
 router.register(r'leads', PublicLeadCreateViewSet, basename='leads')
 router.register(r'dashboard/profile', DashboardProfileViewSet, basename='dashboard-profile')
+router.register(r'public/(?P<slug>[^/.]+)/reviews', PublicReviewViewSet, basename='public-reviews')
+router.register(r'dashboard/reviews', DashboardReviewViewSet, basename='dashboard-reviews')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

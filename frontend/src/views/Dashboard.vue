@@ -5,6 +5,8 @@
       <div class="header-left">
         <h1>Панель управления</h1>
         <span class="organizer-name" v-if="organizerName">Пространство: {{ organizerName }}</span>
+        <span v-if="isSaving" class="saving-indicator">Сохранение...</span>
+        <span v-else-if="lastSaved" class="saved-indicator">✅ Сохранено в {{ lastSaved.toLocaleTimeString() }}</span>
       </div>
       <div class="header-actions">
         <button @click="logout" class="btn-logout">Выйти</button>
@@ -92,6 +94,45 @@
         </div>
       </section>
 
+      <!-- === БЛОК ОТЗЫВОВ === -->
+      <section class="dashboard-section mt-4">
+        <div class="section-top">
+          <h2>Отзывы</h2>
+        </div>
+        
+        <div v-if="reviews.length" class="reviews-admin-list">
+          <div v-for="review in reviews" :key="review.id" class="review-admin-card" :class="{ 'approved': review.is_approved }">
+            <div class="review-admin-header">
+              <strong>{{ review.author_name }}</strong>
+              <span class="review-stars">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
+              <span class="review-date">{{ new Date(review.created_at).toLocaleDateString('ru-RU') }}</span>
+            </div>
+            <p class="review-admin-text">{{ review.text }}</p>
+            <div class="review-admin-actions">
+              <button v-if="!review.is_approved" @click="approveReview(review.id)" class="btn-small btn-approve">Одобрить</button>
+              <span v-else class="status-approved">✅ На сайте</span>
+              <button @click="deleteReview(review.id)" class="btn-delete">Удалить</button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>Пока нет отзывов.</p>
+        </div>
+      </section>
+      <!-- <section class="dashboard-section mt-4">
+        <div class="section-top"><h2>Шаблоны приглашений</h2></div>
+        <p style="color: #666; margin-bottom: 15px;">Используйте эти тексты при ручном приглашении клиентов.</p>
+        <div class="template-list">
+          <div class="template-item">
+            <strong>Стандартное</strong>
+            <p>Привет! Приглашаю тебя на [Название]. Будет интересно!</p>
+          </div>
+          <div class="template-item">
+            <strong>Теплое</strong>
+            <p>Здравствуй! Я подумала, что тебе может понравиться [Название]. Жду!</p>
+          </div>
+        </div>
+      </section> -->
       <!-- Кнопка сохранения всех изменений (направлений) -->
       <div class="save-bar">
         <button @click="saveProfile" class="btn-primary save-btn" :disabled="loading">
@@ -255,7 +296,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api'
 
@@ -269,6 +310,7 @@ const selectedEvent = ref(null)
 const loading = ref(false)
 const error = ref('')
 const organizerName = ref('')
+const reviews = ref([])
 
 const form = reactive({ 
   title: '', date: '', direction: '', location: '', min_people: 3, description: '',
@@ -278,6 +320,21 @@ const form = reactive({
 const profileForm = reactive({ 
   name: '', bio: '', yandex_email: '', yandex_app_password: '', directions_data: [] 
 })
+
+const isSaving = ref(false)
+const lastSaved = ref(null)
+
+watch(profileForm, debounce(async () => {
+  isSaving.value = true
+  try {
+    await api.post('/dashboard/profile/', profileForm)
+    lastSaved.value = new Date()
+  } catch (e) {
+    console.error('Ошибка автосохранения')
+  } finally {
+    isSaving.value = false
+  }
+}, 2000), { deep: true })
 
 // Устанавливаем токен при загрузке
 api.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`
@@ -484,9 +541,54 @@ const inviteContact = async (contactId) => {
   }
 }
 
+const fetchReviews = async () => {
+  try {
+    const { data } = await api.get('/dashboard/reviews/')
+    reviews.value = data
+  } catch (e) { console.error(e) }
+}
+
+const approveReview = async (id) => {
+  try {
+    await api.post(`/dashboard/reviews/${id}/approve/`)
+    
+    // Находим отзыв в локальном массиве и меняем его статус
+    const review = reviews.value.find(r => r.id === id)
+    if (review) {
+      review.is_approved = true // Реактивно обновляем интерфейс
+    }
+    
+    // Опционально: показать уведомление
+    alert('Отзыв одобрен и появился на сайте!')
+  } catch (e) {
+    alert('Ошибка при одобрении отзыва')
+    // Если ошибка, лучше перезагрузить данные, чтобы синхронизироваться с сервером
+    fetchReviews()
+  }
+}
+
+const deleteReview = async (id) => {
+  if (!confirm('Удалить отзыв?')) return
+  await api.delete(`/dashboard/reviews/${id}/`)
+  fetchReviews()
+}
+
+function debounce(func, wait) {
+  let timeout
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout)
+      func(...args)
+    }
+    clearTimeout(timeout)
+    timeout = setTimeout(later, wait)
+  }
+}
+
 onMounted(() => {
   fetchEvents()
   fetchProfile()
+  fetchReviews()
 })
 </script>
 
@@ -842,4 +944,13 @@ onMounted(() => {
   cursor: pointer;
   font-size: 0.8rem;
 }
+.reviews-admin-list { display: flex; flex-direction: column; gap: 15px; }
+.review-admin-card { background: #FDFBF7; padding: 20px; border-left: 4px solid #ccc; border-radius: 4px; }
+.review-admin-card.approved { border-left-color: #2e7d32; background: #f4fcf5; }
+.review-admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+.review-stars { color: #f5a623; letter-spacing: 2px; }
+.review-admin-text { color: #555; margin-bottom: 15px; font-style: italic; }
+.review-admin-actions { display: flex; gap: 15px; align-items: center; }
+.btn-approve { background: #e8f5e9; border: 1px solid #2e7d32; color: #2e7d32; padding: 5px 10px; cursor: pointer; }
+.status-approved { color: #2e7d32; font-size: 0.85rem; }
 </style>
