@@ -489,7 +489,7 @@ const uploadImage = async (event, index) => {
 const getFullImageUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
-  return `http://127.0.0.1:8000${url}`;
+  return `http://127.0.0.1:8787${url}`;
 }
 
 const openCreateModal = () => {

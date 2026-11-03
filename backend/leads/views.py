@@ -19,7 +19,7 @@ import re
 from billing.models import Plan, Subscription
 from .models import Contact, Event, Lead, Organizer, Review, SiteSettings
 from .serializers import EventSerializer, LeadSerializer, ReviewSerializer
-from .email_utils import send_email_from_organizer  # <--- НОВОЕ
+from .email_utils import send_email_from_organizer
 
 
 class IsOrganizer(permissions.BasePermission):
@@ -27,7 +27,6 @@ class IsOrganizer(permissions.BasePermission):
         return request.user.is_authenticated and hasattr(request.user, 'organizer')
 
     def can_create_event(user):
-        """Проверяет, может ли пользователь создать еще одно событие"""
         if getattr(user.organizer, 'is_free_forever', False):
             return True
         try:
@@ -84,7 +83,6 @@ class DashboardEventViewSet(viewsets.ModelViewSet):
         sent_count = 0
         for lead in event.leads.all():
             if '@' in lead.contact:
-                # ИСПОЛЬЗУЕМ НАШУ УТИЛИТУ
                 success = send_email_from_organizer(
                     organizer=event.organizer,
                     subject=f'Напоминание: {event.title}',
@@ -117,9 +115,9 @@ class DashboardLeadViewSet(viewsets.ModelViewSet):
         if '@' not in lead.contact:
             return Response({'error': 'У лида нет Email'}, status=400)
 
-        invite_url = f"http://localhost:5173/invite/{lead.token}"
+        # ИСПОЛЬЗУЕМ НАСТРОЙКУ ВМЕСТО LOCALHOST
+        invite_url = f"{settings.FRONTEND_URL}/invite/{lead.token}"
         
-        # ИСПОЛЬЗУЕМ НАШУ УТИЛИТУ
         success = send_email_from_organizer(
             organizer=event.organizer,
             subject=f"Приглашение на {event.title}",
@@ -184,15 +182,13 @@ def register_organizer(request):
     try:
         with transaction.atomic():
             settings_obj = SiteSettings.objects.first()
-            # Если настроек нет — по умолчанию требуем подтверждение
             require_verification = settings_obj.require_email_verification if settings_obj else True
             
-            # Создаем пользователя
             user = User.objects.create_user(
                 username=username, 
                 password=password, 
                 email=email, 
-                is_active=not require_verification # <--- Если не требуем подтверждения, сразу активен
+                is_active=not require_verification
             )
             
             Organizer.objects.create(
@@ -213,11 +209,11 @@ def register_organizer(request):
             if free_plan:
                 Subscription.objects.create(user=user, plan=free_plan, is_active=True)
             
-            # Отправляем письмо только если требуется подтверждение
             if require_verification:
                 token = default_token_generator.make_token(user)
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
-                verify_url = f"http://localhost:5173/verify-email/{uid}/{token}"
+                # ИСПОЛЬЗУЕМ НАСТРОЙКУ ВМЕСТО LOCALHOST
+                verify_url = f"{settings.FRONTEND_URL}/verify-email/{uid}/{token}"
                 
                 send_mail(
                     subject="Подтвердите ваш Email",
@@ -279,7 +275,6 @@ class DashboardProfileViewSet(viewsets.ModelViewSet):
             'yandex_calendar_name': org.yandex_calendar_name,
             'guarantee_text': org.guarantee_text, 'privacy_policy_url': org.privacy_policy_url,
             'offer_url': org.offer_url,
-            # SMTP
             'smtp_host': org.smtp_host, 'smtp_port': org.smtp_port,
             'smtp_user': org.smtp_user, 'smtp_password': org.smtp_password,
             'smtp_use_ssl': org.smtp_use_ssl,
@@ -296,7 +291,6 @@ class DashboardProfileViewSet(viewsets.ModelViewSet):
         org.guarantee_text = data.get('guarantee_text', org.guarantee_text)
         org.privacy_policy_url = data.get('privacy_policy_url', org.privacy_policy_url)
         org.offer_url = data.get('offer_url', org.offer_url)
-        # SMTP
         org.smtp_host = data.get('smtp_host', org.smtp_host)
         org.smtp_port = data.get('smtp_port', org.smtp_port)
         org.smtp_user = data.get('smtp_user', org.smtp_user)
@@ -324,7 +318,8 @@ def invite_lead(request, lead_id):
     if not event or '@' not in lead.contact:
         return Response({'error': 'Нет события или Email'}, status=400)
     
-    invite_url = f"http://localhost:5173/invite/{lead.token}"
+    # ИСПОЛЬЗУЕМ НАСТРОЙКУ ВМЕСТО LOCALHOST
+    invite_url = f"{settings.FRONTEND_URL}/invite/{lead.token}"
     
     success = send_email_from_organizer(
         organizer=event.organizer,
@@ -391,7 +386,8 @@ def invite_contact_to_event(request):
         direction=event.direction, status='invited'
     )
     
-    invite_url = f"http://localhost:5173/invite/{lead.token}"
+    # ИСПОЛЬЗУЕМ НАСТРОЙКУ ВМЕСТО LOCALHOST
+    invite_url = f"{settings.FRONTEND_URL}/invite/{lead.token}"
     send_email_from_organizer(
         organizer=event.organizer,
         subject=f"Приглашение на {event.title}",
@@ -414,7 +410,8 @@ def resend_verification(request):
     
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    verify_url = f"http://localhost:5173/verify-email/{uid}/{token}"
+    # ИСПОЛЬЗУЕМ НАСТРОЙКУ ВМЕСТО LOCALHOST
+    verify_url = f"{settings.FRONTEND_URL}/verify-email/{uid}/{token}"
     
     send_mail(
         subject="Подтвердите Email (повторно)",
